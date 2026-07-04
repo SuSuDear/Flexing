@@ -18,6 +18,9 @@ extern BOOL initialized;
 extern id manager;
 extern SEL show;
 
+void FLEXingShowExplorerWithLoading(void);
+void FLEXingShowLoadingThenRun(dispatch_block_t block);
+
 // TODO: activator support
 // static NSString * const kFLEXingShow   = @"com.pantsthief.flexing.show";
 // static NSString * const kFLEXingToggle = @"com.pantsthief.flexing.toggle";
