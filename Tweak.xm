@@ -15,9 +15,6 @@ BOOL initialized = NO;
 id manager = nil;
 SEL show = nil;
 
-static id (*FLXGetManager)();
-static SEL (*FLXRevealSEL)();
-static Class (*FLXWindowClass)();
 static int volumeFLEXNotifyToken = 0;
 
 /// This isn't perfect, but works for most cases as intended
@@ -40,59 +37,13 @@ inline BOOL flexAlreadyLoaded() {
 }
 
 %ctor {
-    NSString *standardPath = jbroot(@"/Library/MobileSubstrate/DynamicLibraries/libFLEX.dylib");
-    NSString *reflexPath =   jbroot(@"/Library/MobileSubstrate/DynamicLibraries/libreflex.dylib");
-    NSFileManager *disk = NSFileManager.defaultManager;
-    NSString *libflex = nil;
-    NSString *libreflex = nil;
-    void *handle = nil;
+    if (isLikelyUIProcess() && !isSnapchatApp()) {
+        Class FLEXManagerClass = NSClassFromString(@"FLEXManager");
 
-    if ([disk fileExistsAtPath:standardPath]) {
-        libflex = standardPath;
-        if ([disk fileExistsAtPath:reflexPath]) {
-            libreflex = reflexPath;
-        }
-    } else {
-        // Check if libFLEX resides in the same folder as me
-        NSString *executablePath = NSProcessInfo.processInfo.arguments[0];
-        NSString *whereIam = executablePath.stringByDeletingLastPathComponent;
-        NSString *possibleFlexPath = [whereIam stringByAppendingPathComponent:@"Frameworks/libFLEX.dylib"];
-        NSString *possibleRelexPath = [whereIam stringByAppendingPathComponent:@"Frameworks/libreflex.dylib"];
-        if ([disk fileExistsAtPath:possibleFlexPath]) {
-            libflex = possibleFlexPath;
-            if ([disk fileExistsAtPath:possibleRelexPath]) {
-                libreflex = possibleRelexPath;
-            }
-        } else {
-            // libFLEX not found
-            // ...
-        }
-    }
-
-    if (libflex) {
-        // Hey Snapchat / Snap Inc devs,
-        // This is so users don't get their accounts locked.
-        if (isLikelyUIProcess() && !isSnapchatApp()) {
-            handle = dlopen(libflex.UTF8String, RTLD_LAZY);
-
-            if (libreflex) {
-                dlopen(libreflex.UTF8String, RTLD_NOW);
-            }
-        }
-    }
-
-    if (handle || flexAlreadyLoaded()) {
-        // FLEXing.dylib itself does not hard-link against libFLEX.dylib,
-        // instead libFLEX.dylib provides getters for the relevant class
-        // objects so that it can be updated independently of THIS tweak.
-        FLXGetManager = (id(*)())dlsym(handle, "FLXGetManager");
-        FLXRevealSEL = (SEL(*)())dlsym(handle, "FLXRevealSEL");
-        FLXWindowClass = (Class(*)())dlsym(handle, "FLXWindowClass");
-
-        if (FLXGetManager && FLXRevealSEL) {
-            manager = FLXGetManager();
-            show = FLXRevealSEL();
-            initialized = YES;
+        if (FLEXManagerClass && [FLEXManagerClass respondsToSelector:@selector(sharedManager)]) {
+            manager = [FLEXManagerClass performSelector:@selector(sharedManager)];
+            show = @selector(showExplorer);
+            initialized = manager != nil;
 
             NSString *bid = NSBundle.mainBundle.bundleIdentifier;
             if (bid.length > 0 && ![bid isEqualToString:@"com.apple.springboard"]) {
@@ -109,7 +60,8 @@ inline BOOL flexAlreadyLoaded() {
 
 %hook UIWindow
 - (BOOL)_shouldCreateContextAsSecure {
-    return (initialized && [self isKindOfClass:FLXWindowClass()]) ? YES : %orig;
+    Class FLEXWindowClass = NSClassFromString(@"FLEXWindow");
+    return (initialized && FLEXWindowClass && [self isKindOfClass:FLEXWindowClass]) ? YES : %orig;
 }
 
 %end
