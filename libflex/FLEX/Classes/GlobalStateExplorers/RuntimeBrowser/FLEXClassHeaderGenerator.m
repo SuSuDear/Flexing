@@ -18,7 +18,7 @@
     NSMutableString *header = [NSMutableString string];
     NSString *className = NSStringFromClass(cls);
     NSString *superName = NSStringFromClass(class_getSuperclass(cls));
-    NSString *imageName = [self imageNameForClass:cls];
+    NSString *imageName = [self imagePathForClass:cls];
 
     [header appendString:@"//\n"];
     [header appendString:@"// Dumped by FLEXing\n"];
@@ -72,9 +72,26 @@
     return header.copy;
 }
 
-+ (NSString *)imageNameForClass:(Class)cls {
++ (NSString *)headerForClassHierarchy:(Class)cls {
+    if (!cls) {
+        return @"// Unable to generate header: class is nil\n";
+    }
+
+    NSMutableString *header = [NSMutableString string];
+    Class currentClass = cls;
+    while (currentClass) {
+        [header appendFormat:@"// MARK: - %@\n\n", NSStringFromClass(currentClass)];
+        [header appendString:[self headerForClass:currentClass]];
+        [header appendString:@"\n\n"];
+        currentClass = class_getSuperclass(currentClass);
+    }
+
+    return header.copy;
+}
+
++ (NSString *)imagePathForClass:(Class)cls {
     const char *imageName = class_getImageName(cls);
-    return imageName ? [@(imageName) lastPathComponent] : nil;
+    return imageName ? @(imageName) : nil;
 }
 
 + (NSArray<NSString *> *)protocolNamesForClass:(Class)cls {

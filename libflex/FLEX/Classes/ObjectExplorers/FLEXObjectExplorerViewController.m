@@ -23,6 +23,7 @@
 #import "FLEXScopeCarousel.h"
 #import "FLEXMetadataSection.h"
 #import "FLEXClassHeaderViewController.h"
+#import "FLEXClassHeaderGenerator.h"
 #import "FLEXObjcRuntimeViewController.h"
 #import "FLEXSingleRowSection.h"
 #import "FLEXShortcutsSection.h"
@@ -252,8 +253,34 @@
 
 - (void)headerButtonPressed:(UIBarButtonItem *)sender {
     Class cls = class_isMetaClass(object_getClass(self.object)) ? (Class)self.object : [self.object class];
-    FLEXClassHeaderViewController *header = [[FLEXClassHeaderViewController alloc] initWithClass:cls];
-    [self.navigationController pushViewController:header animated:YES];
+    NSString *className = NSStringFromClass(cls) ?: @"Unknown";
+
+    [FLEXAlert makeSheet:^(FLEXAlert *make) {
+        make.title(className);
+
+        make.button(@"Current Class Header").handler(^(NSArray<NSString *> *strings) {
+            FLEXClassHeaderViewController *header = [[FLEXClassHeaderViewController alloc] initWithClass:cls];
+            [self.navigationController pushViewController:header animated:YES];
+        });
+
+        make.button(@"Full Hierarchy Header").handler(^(NSArray<NSString *> *strings) {
+            NSString *headerText = [FLEXClassHeaderGenerator headerForClassHierarchy:cls];
+            FLEXClassHeaderViewController *header = [[FLEXClassHeaderViewController alloc]
+                initWithClass:cls headerText:headerText title:[className stringByAppendingString:@" Hierarchy"]
+            ];
+            [self.navigationController pushViewController:header animated:YES];
+        });
+
+        make.button(@"Copy Class Name").handler(^(NSArray<NSString *> *strings) {
+            UIPasteboard.generalPasteboard.string = className;
+        });
+
+        make.button(@"Copy Image Path").handler(^(NSArray<NSString *> *strings) {
+            UIPasteboard.generalPasteboard.string = [FLEXClassHeaderGenerator imagePathForClass:cls] ?: @"";
+        });
+
+        make.button(@"Cancel").cancelStyle();
+    } showFrom:self source:sender];
 }
 
 

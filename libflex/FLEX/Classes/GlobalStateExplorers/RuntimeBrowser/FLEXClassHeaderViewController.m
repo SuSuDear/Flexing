@@ -17,12 +17,18 @@
 @implementation FLEXClassHeaderViewController
 
 - (instancetype)initWithClass:(Class)cls {
+    return [self initWithClass:cls
+                    headerText:[FLEXClassHeaderGenerator headerForClass:cls]
+                         title:NSStringFromClass(cls) ?: @"Header"];
+}
+
+- (instancetype)initWithClass:(Class)cls headerText:(NSString *)headerText title:(NSString *)title {
     self = [super initWithNibName:nil bundle:nil];
     if (self) {
         _targetClass = cls;
         _fontSize = 12.0;
-        _headerText = [FLEXClassHeaderGenerator headerForClass:cls];
-        self.title = NSStringFromClass(cls) ?: @"Header";
+        _headerText = headerText.copy ?: @"";
+        self.title = title ?: NSStringFromClass(cls) ?: @"Header";
     }
     return self;
 }
