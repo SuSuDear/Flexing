@@ -76,8 +76,18 @@ inline BOOL flexAlreadyLoaded() {
 %hook _UISheetPresentationController
 - (id)initWithPresentedViewController:(id)present presentingViewController:(id)presenter {
     self = %orig;
-    if ([present isKindOfClass:%c(FLEXNavigationController)]) {
-        // Enable half height sheet
+
+    Class flexNavigationControllerClass = NSClassFromString(@"FLEXNavigationController");
+    Class flexExplorerViewControllerClass = NSClassFromString(@"FLEXExplorerViewController");
+    Class flexWindowClass = NSClassFromString(@"FLEXWindow");
+
+    BOOL isFLEXNavigationController = flexNavigationControllerClass && [present isKindOfClass:flexNavigationControllerClass];
+    BOOL isPresentedFromFLEX =
+        (flexExplorerViewControllerClass && [presenter isKindOfClass:flexExplorerViewControllerClass]) ||
+        (flexWindowClass && [[presenter view].window isKindOfClass:flexWindowClass]);
+
+    if (isFLEXNavigationController && isPresentedFromFLEX) {
+        // Enable half height sheet only for FLEX tools.
         if ([self respondsToSelector:@selector(_presentsAtStandardHalfHeight)]) {
             self._presentsAtStandardHalfHeight = YES;
         } else {

@@ -82,7 +82,13 @@
 }
 
 - (void)hideExplorer {
+    UIWindow *previousKeyWindow = self.explorerWindow.previousKeyWindow ?: FLEXUtility.appKeyWindow;
     self.explorerWindow.hidden = YES;
+
+    if (previousKeyWindow && previousKeyWindow != self.explorerWindow) {
+        [previousKeyWindow makeKeyWindow];
+        [previousKeyWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
+    }
 }
 
 - (void)toggleExplorer {

@@ -1042,9 +1042,11 @@ static BOOL FLEXIsDefaultSkippedView(UIView *view) {
 }
 
 - (void)dismissViewControllerAnimated:(BOOL)animated completion:(void (^)(void))completion {
-    UIWindow *appWindow = self.window.previousKeyWindow;
-    [appWindow makeKeyWindow];
-    [appWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
+    UIWindow *appWindow = self.window.previousKeyWindow ?: FLEXUtility.appKeyWindow;
+    if (appWindow && appWindow != self.window) {
+        [appWindow makeKeyWindow];
+        [appWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
+    }
 
     // Restore previous UIMenuController items
     // Back up and replace the UIMenuController items
@@ -1060,6 +1062,11 @@ static BOOL FLEXIsDefaultSkippedView(UIView *view) {
     [self updateButtonStates];
 
     [super dismissViewControllerAnimated:animated completion:^{
+        if (appWindow && appWindow != self.window) {
+            [appWindow makeKeyWindow];
+            [appWindow.rootViewController setNeedsStatusBarAppearanceUpdate];
+        }
+
         [self updateButtonStates];
 
         if (completion) completion();
